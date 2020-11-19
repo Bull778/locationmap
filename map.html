@@ -4,12 +4,12 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
-    <title>三街会馆导航路线</title>
+    <title>点击导航路线</title>
     <link type="text/css" rel="stylesheet" href="./css/mapcommon.css">
     <link rel="stylesheet" href="https://a.amap.com/jsapi_demos/static/demo-center/css/demo-center.css" />
-    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=28438e021d7644d3a0470b2d28dfb3bb"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key="你的高德key"></script>
     <script src="https://a.amap.com/jsapi_demos/static/demo-center/js/demoutils.js"></script>
-    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=28438e021d7644d3a0470b2d28dfb3bb&plugin=AMap.Driving"></script>
+    <script type="text/javascript" src="https://webapi.amap.com/maps?v=1.4.15&key=‘你的高德web（js API）’&plugin=AMap.Driving"></script>
     <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
 </head>
 <body>
@@ -19,6 +19,7 @@
     <h4 id='status'></h4><hr>
     <p id='result'></p><hr>
 </div>
+<textarea name="point" id="latDiv" class="form-control" readonly rows="10"></textarea>
 <script type="text/javascript">
     //基本地图加载
     var map = new AMap.Map("container", {
@@ -54,37 +55,56 @@
 
     // 根据起终点经纬度规划驾车导航路线
     
-    AMap.plugin('AMap.Geolocation', function() {
-        var geolocation = new AMap.Geolocation({
-            enableHighAccuracy: true,//是否使用高精度定位，默认:true
-            timeout: 10000,          //超过10秒后停止定位，默认：5s
-            buttonPosition:'RB',    //定位按钮的停靠位置
-            buttonOffset: new AMap.Pixel(10, 20),//定位按钮与设置的停靠位置的偏移量，默认：Pixel(10, 20)
-            zoomToAccuracy: true,   //定位成功后是否自动调整地图视野到定位点
-
+    AMap.event.addListener(map, 'click', getLnglat); //点击事件
+    /**
+     * 点击获取坐标
+     * @param e
+     */
+    function getLnglat(e) {
+        map.clearMap();
+        var x = e.lnglat.getLng();
+        var y = e.lnglat.getLat();
+        document.getElementById("latDiv").innerHTML = '[' + x + "," + y + ']';
+        console.log(x,y)
+        var marker = new AMap.Marker({
+            icon: "https://webapi.amap.com/theme/v1.3/markers/n/mark_b.png",
+            position: [x, y]
         });
-        map.addControl(geolocation);
-        geolocation.getCurrentPosition(function(status,result){
-            if(status=='complete'){
-                onComplete(result)
-                console.log(result,'result')
-                var locationdata = result.position.R
-                var locationdata1 = result.position.Q
-                driving.search(new AMap.LngLat(locationdata,locationdata1), new AMap.LngLat(113.544558,22.191249), function(status, result) {
-        // result 即是对应的驾车导航信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
-        console.log(status)
-        console.log(result)
-        if (status === 'complete') {
-            log.success('绘制驾车路线完成')
-        } else {
-            log.error('获取驾车数据失败：' + result)
-        }
-    });
-            }else{
-                onError(result)
+        marker.setMap(map);
+
+        AMap.plugin('AMap.Geolocation', function() {
+            var geolocation = new AMap.Geolocation({
+                enableHighAccuracy: true,//是否使用高精度定位，默认:true
+                timeout: 10000,          //超过10秒后停止定位，默认：5s
+                buttonPosition:'RB',    //定位按钮的停靠位置
+                buttonOffset: new AMap.Pixel(10, 20),//定位按钮与设置的停靠位置的偏移量，默认：Pixel(10, 20)
+                zoomToAccuracy: true,   //定位成功后是否自动调整地图视野到定位点
+
+            });
+            map.addControl(geolocation);
+            geolocation.getCurrentPosition(function(status,result){
+                if(status=='complete'){
+                    onComplete(result)
+                    console.log(result,'result')
+                    var locationdata = result.position.R
+                    var locationdata1 = result.position.Q
+                    driving.search(new AMap.LngLat(locationdata,locationdata1), new AMap.LngLat(x,y), function(status, result) {
+            // result 即是对应的驾车导航信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_DrivingResult
+            console.log(status)
+            console.log(result)
+            if (status === 'complete') {
+                log.success('绘制驾车路线完成')
+            } else {
+                log.error('获取驾车数据失败：' + result)
             }
         });
-    });
+                }else{
+                    onError(result)
+                }
+            });
+        });
+    }
+    
     
 </script>
 </body>
